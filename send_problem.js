@@ -18,6 +18,11 @@ async function main() {
     process.exit(1);
   }
 
+  if (problems.length === 0) {
+    console.error("❌ No problems found after filtering");
+    process.exit(1);
+  }
+
   const problem = problems[Math.floor(Math.random() * problems.length)];
 
   const difficultyColors = { Easy: 0x00b8a9, Medium: 0xf9a825, Hard: 0xe53935 };
