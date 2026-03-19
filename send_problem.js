@@ -1,8 +1,12 @@
 async function getNeetcodeProblems() {
-  // NeetCode's internal API — used by neetcode.io itself
-  const res = await fetch("https://neetcode.io/api/problems");
-  if (!res.ok) throw new Error(`API failed: ${res.status}`);
-  return await res.json();
+  const res = await fetch(
+    "https://raw.githubusercontent.com/neetcode-gh/leetcode/main/.problemSiteData.json"
+  );
+  if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+  const data = await res.json();
+
+  // Filter to only NeetCode 150 problems
+  return data.filter(p => p.neetcode150);
 }
 
 async function main() {
@@ -16,10 +20,6 @@ async function main() {
 
   const problem = problems[Math.floor(Math.random() * problems.length)];
 
-  const difficulty = problem.difficulty;
-  const title = problem.name || problem.title;
-  const slug = problem.slug || problem.link;
-
   const difficultyColors = { Easy: 0x00b8a9, Medium: 0xf9a825, Hard: 0xe53935 };
   const difficultyEmoji = { Easy: "🟢", Medium: "🟡", Hard: "🔴" };
 
@@ -27,11 +27,12 @@ async function main() {
     embeds: [{
       title: `📌 Daily NeetCode Challenge`,
       description: [
-        `### [${title}](https://neetcode.io/problems/${slug})`,
-        `**Difficulty:** ${difficultyEmoji[difficulty]} ${difficulty}`,
-        `**LeetCode:** [Solve here](https://leetcode.com/problems/${slug})`,
+        `### [${problem.problem}](https://neetcode.io/problems/${problem.link})`,
+        `**Category:** ${problem.pattern}`,
+        `**Difficulty:** ${difficultyEmoji[problem.difficulty]} ${problem.difficulty}`,
+        `**LeetCode:** [Solve here](https://leetcode.com/problems/${problem.link})`,
       ].join("\n"),
-      color: difficultyColors[difficulty] ?? 0x5865f2,
+      color: difficultyColors[problem.difficulty] ?? 0x5865f2,
       footer: { text: "Good luck! 💪 Try to solve it before checking the solution." },
       timestamp: new Date().toISOString(),
     }]
@@ -43,7 +44,7 @@ async function main() {
     body: JSON.stringify(payload),
   });
 
-  console.log(webhookRes.ok ? `✅ Sent: ${title}` : `❌ Webhook failed: ${webhookRes.status}`);
+  console.log(webhookRes.ok ? `✅ Sent: ${problem.problem}` : `❌ Webhook failed: ${webhookRes.status}`);
 }
 
 main();
