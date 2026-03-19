@@ -1,61 +1,49 @@
 async function getNeetcodeProblems() {
-  // NeetCode's own roadmap data, pulled directly from their open-source repo
-  const url = "https://raw.githubusercontent.com/neetcode-gh/leetcode/main/README.md";
-  const res = await fetch(url);
-  const text = await res.text();
-
-  // Parse markdown table rows like: | Two Sum | [Solution] | Easy |
-  const problems = [];
-  const regex = /\|\s*\[([^\]]+)\]\(https:\/\/leetcode\.com\/problems\/([^)]+)\)[^|]*\|[^|]*\|\s*(Easy|Medium|Hard)\s*\|/g;
-
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    const [, title, slug, difficulty] = match;
-    problems.push({
-      title,
-      url: `https://neetcode.io/problems/${slug}`,
-      leetcodeUrl: `https://leetcode.com/problems/${slug}`,
-      difficulty,
-    });
-  }
-
-  return problems;
+  // NeetCode's internal API — used by neetcode.io itself
+  const res = await fetch("https://neetcode.io/api/problems");
+  if (!res.ok) throw new Error(`API failed: ${res.status}`);
+  return await res.json();
 }
 
 async function main() {
-  const problems = await getNeetcodeProblems();
-
-  if (!problems.length) {
-    console.error("❌ Failed to fetch problems");
+  let problems;
+  try {
+    problems = await getNeetcodeProblems();
+  } catch (err) {
+    console.error("❌ Failed to fetch problems:", err.message);
     process.exit(1);
   }
 
   const problem = problems[Math.floor(Math.random() * problems.length)];
+
+  const difficulty = problem.difficulty;
+  const title = problem.name || problem.title;
+  const slug = problem.slug || problem.link;
 
   const difficultyColors = { Easy: 0x00b8a9, Medium: 0xf9a825, Hard: 0xe53935 };
   const difficultyEmoji = { Easy: "🟢", Medium: "🟡", Hard: "🔴" };
 
   const payload = {
     embeds: [{
-      title: `📌 Daily LeetCode Challenge`,
+      title: `📌 Daily NeetCode Challenge`,
       description: [
-        `### [${problem.title}](${problem.leetcodeUrl})`,
-        `**Difficulty:** ${difficultyEmoji[problem.difficulty]} ${problem.difficulty}`,
-        `**NeetCode solution:** [Watch here](${problem.url})`,
+        `### [${title}](https://neetcode.io/problems/${slug})`,
+        `**Difficulty:** ${difficultyEmoji[difficulty]} ${difficulty}`,
+        `**LeetCode:** [Solve here](https://leetcode.com/problems/${slug})`,
       ].join("\n"),
-      color: difficultyColors[problem.difficulty],
+      color: difficultyColors[difficulty] ?? 0x5865f2,
       footer: { text: "Good luck! 💪 Try to solve it before checking the solution." },
       timestamp: new Date().toISOString(),
     }]
   };
 
-  const res = await fetch(process.env.DISCORD_WEBHOOK_URL, {
+  const webhookRes = await fetch(process.env.DISCORD_WEBHOOK_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 
-  console.log(res.ok ? `✅ Sent: ${problem.title}` : `❌ Failed: ${res.status}`);
+  console.log(webhookRes.ok ? `✅ Sent: ${title}` : `❌ Webhook failed: ${webhookRes.status}`);
 }
 
 main();
