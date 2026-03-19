@@ -1,17 +1,17 @@
 name: Daily NeetCode Problem
 on:
   schedule:
-    - cron: '0 9 * * *'  # 9 AM UTC daily
-  workflow_dispatch:       # allows manual trigger
+    - cron: '0 9 * * *'
+  workflow_dispatch:
 
 jobs:
   send-problem:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
       - run: node send_problem.js
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
