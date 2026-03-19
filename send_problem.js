@@ -2,10 +2,8 @@ async function getNeetcodeProblems() {
   const res = await fetch(
     "https://raw.githubusercontent.com/neetcode-gh/leetcode/main/.problemSiteData.json"
   );
-  if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+  if (!res.ok) throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
   const data = await res.json();
-
-  // Filter to only NeetCode 150 problems
   return data.filter(p => p.neetcode150);
 }
 
@@ -24,6 +22,7 @@ async function main() {
   }
 
   const problem = problems[Math.floor(Math.random() * problems.length)];
+  const slug = problem.link.replace(/\/$/, ""); // strip trailing slash
 
   const difficultyColors = { Easy: 0x00b8a9, Medium: 0xf9a825, Hard: 0xe53935 };
   const difficultyEmoji = { Easy: "🟢", Medium: "🟡", Hard: "🔴" };
@@ -32,10 +31,10 @@ async function main() {
     embeds: [{
       title: `📌 Daily NeetCode Challenge`,
       description: [
-        `### [${problem.problem}](https://neetcode.io/problems/${problem.link})`,
+        `### [${problem.problem}](https://neetcode.io/problems/${slug})`,
         `**Category:** ${problem.pattern}`,
         `**Difficulty:** ${difficultyEmoji[problem.difficulty]} ${problem.difficulty}`,
-        `**LeetCode:** [Solve here](https://leetcode.com/problems/${problem.link})`,
+        `**LeetCode:** [Solve here](https://leetcode.com/problems/${slug})`,
       ].join("\n"),
       color: difficultyColors[problem.difficulty] ?? 0x5865f2,
       footer: { text: "Good luck! 💪 Try to solve it before checking the solution." },
