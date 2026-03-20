@@ -7,6 +7,10 @@ async function getNeetcodeProblems() {
   return data.filter(p => p.neetcode150);
 }
 
+function pickRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 async function main() {
   let problems;
   try {
@@ -21,26 +25,34 @@ async function main() {
     process.exit(1);
   }
 
-  const problem = problems[Math.floor(Math.random() * problems.length)];
-  const slug = problem.link.replace(/\/$/, ""); // strip trailing slash
+  const byDifficulty = {
+    Easy: problems.filter(p => p.difficulty === "Easy"),
+    Medium: problems.filter(p => p.difficulty === "Medium"),
+    Hard: problems.filter(p => p.difficulty === "Hard"),
+  };
 
   const difficultyColors = { Easy: 0x00b8a9, Medium: 0xf9a825, Hard: 0xe53935 };
   const difficultyEmoji = { Easy: "🟢", Medium: "🟡", Hard: "🔴" };
 
-  const payload = {
-    embeds: [{
-      title: `📌 Daily NeetCode Challenge`,
+  const embeds = ["Easy", "Medium", "Hard"].map(difficulty => {
+    const problem = pickRandom(byDifficulty[difficulty]);
+    const slug = problem.link.replace(/\/$/, "");
+    return {
       description: [
-        `### [${problem.problem}](https://neetcode.io/problems/${slug})`,
+        `### [${problem.problem}](https://leetcode.com/problems/${slug})`,
         `**Category:** ${problem.pattern}`,
-        `**Difficulty:** ${difficultyEmoji[problem.difficulty]} ${problem.difficulty}`,
-        `**LeetCode:** [Solve here](https://leetcode.com/problems/${slug})`,
+        `**Difficulty:** ${difficultyEmoji[difficulty]} ${difficulty}`,
       ].join("\n"),
-      color: difficultyColors[problem.difficulty] ?? 0x5865f2,
-      footer: { text: "Good luck! 💪 Try to solve it before checking the solution." },
-      timestamp: new Date().toISOString(),
-    }]
-  };
+      color: difficultyColors[difficulty],
+    };
+  });
+
+  // Add header to first embed, footer to last
+  embeds[0].title = "📌 Daily LeetCode Challenges";
+  embeds[2].footer = { text: "Good luck! 💪 Try to solve them before checking the solutions." };
+  embeds[2].timestamp = new Date().toISOString();
+
+  const payload = { embeds };
 
   const webhookRes = await fetch(process.env.DISCORD_WEBHOOK_URL, {
     method: "POST",
@@ -48,7 +60,7 @@ async function main() {
     body: JSON.stringify(payload),
   });
 
-  console.log(webhookRes.ok ? `✅ Sent: ${problem.problem}` : `❌ Webhook failed: ${webhookRes.status}`);
+  console.log(webhookRes.ok ? "✅ Sent!" : `❌ Webhook failed: ${webhookRes.status}`);
 }
 
 main();
